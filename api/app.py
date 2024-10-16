@@ -1,14 +1,12 @@
 from contextlib import asynccontextmanager
 
-from passlib.context import CryptContext
 from fastapi import FastAPI
 
-from api.user_resource.router import UsersResource
+from api.user_resource import UsersRouter
+from api.user_resource.resources import UsersResource
 from common.mongo import MongoWorker
 from common.settings import MONGO_URL
 
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 mongo = MongoWorker(MONGO_URL)
 
@@ -17,6 +15,7 @@ async def lifespan(app: FastAPI):
 
     mongo.connect()
     print(mongo.url)
+    print(type(mongo.client))
     print("Connected to the MongoDB database!")
     yield
 
@@ -26,4 +25,6 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 # init resources
-app.include_router(UsersResource(mongo).router, prefix="/users")
+app.include_router(UsersResource(mongo).router)
+app.include_router(UsersRouter(mongo).router)
+

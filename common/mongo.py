@@ -15,9 +15,6 @@ class MongoWorker(CollectionsMixin):
         else:
             self.client = AsyncIOMotorClient(url)
 
-    def connect(self):
-        pass
-
     def disconnect(self):
         self.client.close()
 

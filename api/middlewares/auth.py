@@ -13,6 +13,15 @@ class AuthMiddleware(BaseHTTPMiddleware):
         super().__init__(app)
         self.mongo = mongo
 
+    async def authorize_user(self, mongo: MongoWorker, token: str):
+        try:
+            UUID(token, version=4)
+        except ValueError as e:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+        user_from_db = await mongo.users_coll.find_one({"token": token})
+        user_obj = User(**user_from_db).model_dump()
+        return user_obj
+
     async def dispatch(self, request: Request, call_next):
         token = request.headers.get("Authorization")
         user = None
@@ -33,18 +42,8 @@ class AuthMiddleware(BaseHTTPMiddleware):
                 raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
             if request.scope["endpoint"].__self__.permissions and not \
                 any(perm in user["roles"] for perm in request.scope["endpoint"].__self__.permissions):
-                raise HTTPException(status_code=403)
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
         except HTTPException as e:
             return JSONResponse(e.detail, status_code=e.status_code)
     
         return response
-    
-    async def authorize_user(self, mongo: MongoWorker, token: str):
-        try:
-            UUID(token, version=4)
-        except ValueError as e:
-            raise HTTPException(status_code=400)
-        user_from_db = await mongo.users_coll.find_one({"token": token})
-        user_obj = User(**user_from_db).model_dump()
-        return user_obj
-        

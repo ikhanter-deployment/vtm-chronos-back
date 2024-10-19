@@ -6,8 +6,8 @@ from pydantic import BaseModel, Field, field_validator
 class User(BaseModel):
     id: str = Field(default_factory=generate_object_id, alias="_id")
     username: str
-    password: str
-    token: str = Field(default_factory=generate_token)
+    password: str = Field(exclude=True)
+    token: str = Field(default_factory=generate_token, exclude=True)
     roles: list[str] = Field(default=["user"])
     character_ids: list[str] = Field(default_factory=list)
     chronicle_ids: list[str] = Field(default_factory=list)

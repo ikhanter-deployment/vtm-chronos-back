@@ -14,37 +14,37 @@ class AuthMiddleware(BaseHTTPMiddleware):
         self.mongo = mongo
 
     async def dispatch(self, request: Request, call_next):
-
-        response = await call_next(request)
-        if str(response.status_code).startswith('3'):
-            return response
+        token = request.headers.get("Authorization")
+        user = None
         try:
-            if request.scope["endpoint"].__self__.require_auth:
-                token = request.headers.get("Authorization")
-                if not token:
-                    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
-
+            if token:
                 user = await self.authorize_user(
                     self.mongo,
-                    request.scope["endpoint"].__self__.permissions,
                     token
                 )
-                request.state.user = user
+            request.state.user = user
+
+            response = await call_next(request)
+
+            if str(response.status_code).startswith('3') or not request.scope["endpoint"].__self__.require_auth:
+                return response
+
+            if not user:
+                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+            if request.scope["endpoint"].__self__.permissions and not \
+                any(perm in user["roles"] for perm in request.scope["endpoint"].__self__.permissions):
+                raise HTTPException(status_code=403)
         except HTTPException as e:
             return JSONResponse(e.detail, status_code=e.status_code)
+    
         return response
     
-    async def authorize_user(self, mongo: MongoWorker, permissions: list[str], token: str):
+    async def authorize_user(self, mongo: MongoWorker, token: str):
         try:
             UUID(token, version=4)
         except ValueError as e:
             raise HTTPException(status_code=400)
-        user_obj = await mongo.users_coll.find_one({"token": token})
-        if not user_obj:
-            raise HTTPException(status_code=400)
-        if not permissions:
-            return user_obj
-        if not any(perm in user_obj["roles"] for perm in permissions):
-            raise HTTPException(status_code=403)
+        user_from_db = await mongo.users_coll.find_one({"token": token})
+        user_obj = User(**user_from_db).model_dump()
         return user_obj
         

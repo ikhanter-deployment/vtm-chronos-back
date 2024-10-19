@@ -13,10 +13,10 @@ from pydantic import BaseModel, Field
 
 class BaseResource:
 
-    def __init__(self, permissions, mongo: MongoWorker):
+    def __init__(self, require_auth, permissions, mongo: MongoWorker):
         self.mongo: MongoWorker = mongo
         self.router = APIRouter(
-            dependencies=[Depends(role_required(permissions))]
+            dependencies=[Depends(role_required(require_auth, permissions))]
         )
         # self.mongo: MongoWorker = mongo
         # self.permissions = []
@@ -59,7 +59,7 @@ async def get_current_user(req: Request, token: str = Depends(get_token)):
     return user
 
 
-def role_required(required_roles: list):
+def role_required(require_auth: bool, required_roles: list):
     def role_checker(current_user: UserAPIState = Depends(get_current_user)):
         if required_roles:
             if not current_user:
@@ -67,4 +67,10 @@ def role_required(required_roles: list):
             if not any(role in required_roles for role in current_user.roles):
                 raise HTTPException(status_code=403)
         return current_user
-    return role_checker
+    
+    def return_none():
+        return None
+    if require_auth:
+        return role_checker
+    return return_none
+    

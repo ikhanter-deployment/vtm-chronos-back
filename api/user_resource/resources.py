@@ -10,8 +10,9 @@ from fastapi import FastAPI, APIRouter, Query, Depends, Request
 class UsersResource(BaseResource):
 
     def __init__(self, mongo: MongoWorker):
+        self.require_auth = False
         self.permissions = ['user']
-        super().__init__(self.permissions, mongo)
+        super().__init__(self.require_auth, self.permissions, mongo)
         self.router.add_api_route(
             "/",
             self.get_user, # Обработчик
@@ -28,8 +29,9 @@ class UsersResource(BaseResource):
 class RegisterResource(BaseResource):
 
     def __init__(self, mongo: MongoWorker):
+        self.require_auth = False
         self.permissions = []
-        super().__init__(self.permissions, mongo)
+        super().__init__(self.require_auth, self.permissions, mongo)
         self.router.add_api_route(
             "/",
             self.post_registration,
@@ -50,8 +52,9 @@ class RegisterResource(BaseResource):
 class LoginResource(BaseResource):
 
     def __init__(self, mongo: MongoWorker):
+        self.require_auth = False
         self.permissions = []
-        super().__init__(self.permissions, mongo)
+        super().__init__(self.require_auth, self.permissions, mongo)
         self.router.add_api_route(
             "/",
             self.post_login,

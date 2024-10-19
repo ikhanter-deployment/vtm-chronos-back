@@ -11,8 +11,9 @@ from fastapi import Request, FastAPI, APIRouter, Query, Depends
 class UnauthResource(BaseResource):
 
     def __init__(self, mongo: MongoWorker):
+        self.require_auth = False
         self.permissions = []
-        super().__init__(self.permissions, mongo)
+        super().__init__(self.require_auth, self.permissions, mongo)
         self.router.add_api_route(
             "/",
             self.get_info, # Обработчик
@@ -29,8 +30,9 @@ class UnauthResource(BaseResource):
 class AuthResource(BaseResource):
 
     def __init__(self, mongo: MongoWorker):
+        self.require_auth = True
         self.permissions = ["user"]
-        super().__init__(self.permissions, mongo)
+        super().__init__(self.require_auth, self.permissions, mongo)
         self.router.add_api_route(
             "/",
             self.get_info,

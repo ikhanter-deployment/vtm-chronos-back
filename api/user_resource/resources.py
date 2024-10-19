@@ -4,30 +4,32 @@ from common.models.user import User
 from common.mongo import MongoWorker
 from .schemas import *
 
-from fastapi import FastAPI, APIRouter, Query, Depends
+from fastapi import FastAPI, APIRouter, Query, Depends, Request
 
 
 class UsersResource(BaseResource):
 
     def __init__(self, mongo: MongoWorker):
-        super().__init__(mongo)
+        self.permissions = ['user']
+        super().__init__(self.permissions, mongo)
         self.router.add_api_route(
             "/",
-            self.get_users, # Обработчик
+            self.get_user, # Обработчик
             methods=["GET"],
             # response_model=NoneType,
             # response_model_by_alias=True,
         )
 
-    async def get_users(self, limit: int = Query(0, le=100), offset: int = Query(0, ge=0)):
-        print(self.mongo.url)
-        return None
+    async def get_user(self, req: Request):
+        user: User = req.state.user
+        return user.model_dump()
     
 
 class RegisterResource(BaseResource):
 
     def __init__(self, mongo: MongoWorker):
-        super().__init__(mongo)
+        self.permissions = []
+        super().__init__(self.permissions, mongo)
         self.router.add_api_route(
             "/",
             self.post_registration,
@@ -48,7 +50,8 @@ class RegisterResource(BaseResource):
 class LoginResource(BaseResource):
 
     def __init__(self, mongo: MongoWorker):
-        super().__init__(mongo)
+        self.permissions = []
+        super().__init__(self.permissions, mongo)
         self.router.add_api_route(
             "/",
             self.post_login,

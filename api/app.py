@@ -1,11 +1,15 @@
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+# from fastapi.exceptions import HTTPException
+from starlette.exceptions import HTTPException as StarletteHTTPException
+from fastapi.responses import JSONResponse
 
 from api.user_resource import UsersRouter
-from api.user_resource.resources import UsersResource
+from api.base_resource.base import BaseResponse
+from api.characters_resource import CharactersRouter
 from api.main_resource import MainRouter
-from api.middlewares.auth import AuthMiddleware
+# from api.middlewares.auth import AuthMiddleware
 from common.mongo import MongoWorker
 from common.settings import MONGO_URL
 
@@ -27,9 +31,14 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-app.add_middleware(AuthMiddleware, mongo=mongo)
+app.state.mongo = mongo
 
-# init resources
-# app.include_router(UsersResource(mongo).router)
+app.include_router(CharactersRouter(mongo).router)
 app.include_router(UsersRouter(mongo).router)
 app.include_router(MainRouter(mongo).router)
+
+@app.exception_handler(StarletteHTTPException)
+def raise_http_exception(req: Request, exc: StarletteHTTPException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=BaseResponse(status=exc.status_code, data=exc.detail).model_dump())

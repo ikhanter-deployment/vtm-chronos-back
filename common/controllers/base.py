@@ -11,8 +11,13 @@ class CollectionsMixin:
     client: AsyncIOMotorClient | MongoClient
 
     _users_coll_name = "users"
+    _characters_coll_name = "characters"
 
     @property
     def users_coll(self):
         return self.client[MONGO_DB][self._users_coll_name]
+    
+    @property
+    def characters_coll(self):
+        return self.client[MONGO_DB][self._characters_coll_name]
 

@@ -11,9 +11,8 @@ from fastapi import Request, FastAPI, APIRouter, Query, Depends
 class UnauthResource(BaseResource):
 
     def __init__(self, mongo: MongoWorker):
-        super().__init__(mongo)
-        self.require_auth = False
         self.permissions = []
+        super().__init__(self.permissions, mongo)
         self.router.add_api_route(
             "/",
             self.get_info, # Обработчик
@@ -23,16 +22,15 @@ class UnauthResource(BaseResource):
         )
 
     async def get_info(self, req: Request):
-        print(req.state.user)
+        # print(req.state.user)
         return ["HELLO KINDRED"]
     
 
 class AuthResource(BaseResource):
 
     def __init__(self, mongo: MongoWorker):
-        super().__init__(mongo)
-        self.require_auth = True
         self.permissions = ["user"]
+        super().__init__(self.permissions, mongo)
         self.router.add_api_route(
             "/",
             self.get_info,
@@ -42,5 +40,5 @@ class AuthResource(BaseResource):
         )
 
     async def get_info(self, req: Request):
-        print(req.state.user)
+        # print(req.state.user)
         return ["HELLO AUTHORIZED KINDRED"]
